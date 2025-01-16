@@ -1,0 +1,1046 @@
+_id: spc_12a301f3cc1f4c2d8c5c0cd2ece90d05
+type: ApiSpec
+parentId: wrk_52d613c105e14ba5b64402d380f9268c
+modified: 1726721887148
+created: 1726721887136
+fileName: Credit Platform Service 1.0.0
+contents: >
+  openapi: 3.0.3
+
+
+  info:
+    title: Credit Platform Service
+    description: Internal API of Coast's Credit Platform Service
+    version: 1.0.0
+
+  servers:
+    - url: 'http://credit-platform-internal-api.coastpay.internal'
+
+  x-kong-service-defaults:
+    retries: 3
+    connect_timeout: 60000
+    write_timeout: 60000
+    read_timeout: 60000
+
+  # This is a name for the service in the Kong UI.
+
+  # It should be descriptive of your service, but is usually just the service name.
+
+  x-kong-name: 'Credit Platform Service'
+
+
+  # This enables JSON schema validation on all requests
+
+  x-kong-plugin-request-validator:
+    config:
+      verbose_response: true
+
+  x-kong-route-defaults:
+    preserve_host: true
+    hosts:
+      # This is the base URL that Kong will call to reach the backend.
+      # All paths in your config are relative to this
+      - 'credit-platform.coastpay.internal'
+
+  paths:
+    /health:
+      get:
+        description: General health check
+        operationId: health-check
+        responses:
+          '200':
+            description: Service is healthy
+
+    /platforms:
+      get:
+        description: Get the list of platforms on the platform
+        operationId: get-platforms
+        responses:
+          '200':
+            description: Success
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PlatformResponse'
+          '400':
+            description: Bad request error
+
+      post:
+        description: Create a new credit platform
+        operationId: create-new-platform
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformCreateRequest'
+        responses:
+          '201':
+            description: The platform has been created
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PlatformResponse'
+          '400':
+            description: Bad request error
+
+    /fleets:
+      get:
+        operationId: get-fleets
+        summary: Get the list of fleets on the platform
+        parameters:
+          - in: query
+            name: offset
+            description: |
+              The (zero-based) offset of the first fleet returned in the collection.
+              If not provided will return the first page of results.
+            required: false
+            schema:
+              type: integer
+              minimum: 0
+              default: 0
+          - in: query
+            name: limit
+            description: |
+              The maximum number of fleets to return.
+              If the value exceeds the maximum, then the maximum value will be used.
+            required: false
+            schema:
+              type: integer
+              minimum: 0
+              maximum: 100
+              default: 100
+          - in: header
+            name: x-coast-platform-token
+            required: true
+            schema:
+              type: string
+        responses:
+          '200':
+            description: 'Successfully returned a list of fleets on the platform'
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/FleetsResponse'
+          '400':
+            description: Bad request error
+
+      post:
+        description: Create a new fleet in the specified credit platform
+        operationId: create-new-fleet
+        parameters:
+          - name: x-coast-platform-token
+            in: header
+            required: true
+            schema:
+              type: string
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FleetCreateRequest'
+        responses:
+          '201':
+            description: The fleet has been successfully created
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/FleetResponse'
+          '400':
+            description: Bad request error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/GeneralErrorResponse'
+
+    /fleets/lookup-by-ids:
+      post:
+        description: Given a list of fleet IDs looks up their platforms and returns the mapping
+        operationId: lookup-fleet-platforms-by-ids
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FleetPlatformByIdsLookupRequest'
+        responses:
+          '200':
+            description: Lookup successful
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/FleetPlatformByIdsLookupResponse'
+          '400':
+            description: Bad request error
+
+    /fleets/{fleetId}/users:
+      get:
+        summary: Get the list of users in a platform fleet
+        operationId: get-users
+        parameters:
+          - in: path
+            name: fleetId
+            description: ID of the fleet to list users in
+            required: true
+            schema:
+              type: string
+          - in: query
+            name: offset
+            description: |
+              The (zero-based) offset of the first user returned in the collection.
+              If not provided will return the first page of users.
+            required: false
+            schema:
+              type: integer
+              minimum: 0
+              default: 0
+          - in: query
+            name: limit
+            description: |
+              The maximum number of users to return.
+              If the value exceeds the maximum, then the maximum value will be used.
+            required: false
+            schema:
+              type: integer
+              minimum: 0
+              maximum: 100
+              default: 100
+        responses:
+          '200':
+            description: 'Successfully returned a list of users in your fleet'
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/UsersResponse'
+          '403':
+            description: 'Forbidden'
+
+      post:
+        summary: Create a new user in the fleet
+        operationId: create-new-user
+        parameters:
+          - name: x-coast-platform-token
+            in: header
+            required: true
+            schema:
+              type: string
+          - in: path
+            name: fleetId
+            description: ID of the fleet where the user is to be created
+            required: true
+            schema:
+              type: string
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreateRequest'
+        responses:
+          '201':
+            description: The user has been successfully created
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/UserResponse'
+          '400':
+            description: Bad request error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/GeneralErrorResponse'
+
+    /fleets/{fleetId}/users/{userId}:
+      get:
+        summary: Get a user specified by the ID
+        operationId: get-user
+        parameters:
+          - name: x-coast-platform-token
+            in: header
+            required: true
+            schema:
+              type: string
+          - in: path
+            name: fleetId
+            required: true
+            schema:
+              type: string
+          - name: userId
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          '200':
+            description: 'Successfully returned the user'
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/UserResponse'
+          '404':
+            description: Not found error
+
+      patch:
+        summary: Update a user specified by the ID
+        operationId: update-user
+        parameters:
+          - in: path
+            name: fleetId
+            required: true
+            schema:
+              type: string
+          - name: userId
+            in: path
+            required: true
+            schema:
+              type: string
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserUpdateRequest'
+        responses:
+          '200':
+            description: 'Successfully updated the user'
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/UserResponse'
+          '400':
+            description: Bad request error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/GeneralErrorResponse'
+
+    /fleets/{fleetId}/vehicles:
+      get:
+        summary: Get the list of vehicles in a platform fleet
+        operationId: get-vehicles
+        parameters:
+          - in: path
+            name: fleetId
+            description: ID of the fleet to list vehicles in
+            required: true
+            schema:
+              type: string
+          - in: query
+            name: offset
+            description: |
+              The (zero-based) offset of the first vehicle returned in the collection.
+              If not provided will return the first page of results.
+            required: false
+            schema:
+              type: integer
+              minimum: 0
+              default: 0
+          - in: query
+            name: limit
+            description: |
+              The maximum number of vehicles to return.
+              If the value exceeds the maximum, then the maximum value will be used.
+            required: false
+            schema:
+              type: integer
+              minimum: 0
+              maximum: 100
+              default: 100
+        responses:
+          '200':
+            description: 'Successfully returned a list of vehicles in your fleet'
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/VehiclesResponse'
+          '403':
+            description: |
+              'Specified fleet does not exist of does not belong to your platform'
+      post:
+        summary: Create a new vehicle in the specified fleet
+        operationId: create-new-vehicle
+        parameters:
+          - name: x-coast-platform-token
+            in: header
+            required: true
+            schema:
+              type: string
+          - in: path
+            name: fleetId
+            description: ID of the fleet where the vehicle is to be created
+            required: true
+            schema:
+              type: string
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleCreateRequest'
+        responses:
+          '201':
+            description: The vehicle has been successfully created
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/VehicleResponse'
+          '400':
+            description: Bad request error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/GeneralErrorResponse'
+          '403':
+            description: |
+              'Specified fleet does not exist of does not belong to your platform'
+
+    /fleets/{fleetId}/vehicles/{vehicleId}:
+      get:
+        summary: Get a vehicle specified by the ID
+        operationId: get-vehicle
+        parameters:
+          - name: x-coast-platform-token
+            in: header
+            required: true
+            schema:
+              type: string
+          - in: path
+            name: fleetId
+            required: true
+            schema:
+              type: string
+          - name: vehicleId
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          '200':
+            description: 'Successfully returned the vehicle'
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/VehicleResponse'
+          '404':
+            description: Not found error
+      patch:
+        summary: Update a vehicle specified by the vehicle ID
+        operationId: update-vehicle
+        parameters:
+          - in: path
+            name: fleetId
+            required: true
+            schema:
+              type: string
+          - name: vehicleId
+            in: path
+            required: true
+            schema:
+              type: string
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleUpdateRequest'
+        responses:
+          '200':
+            description: 'Successfully updated the vehicle'
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/VehicleResponse'
+          '400':
+            description: Bad request error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/GeneralErrorResponse'
+          '403':
+            description: |
+              'Specified fleet does not exist of does not belong to your platform'
+
+  components:
+    schemas:
+      # DATA TYPES
+      PlatformName:
+        type: string
+        minLength: 1
+        maxLength: 128
+
+      AccountOwnerCreateRequest:
+        description: Request to create an account owner for a fleet
+        type: object
+        required:
+          - firstName
+          - lastName
+          - email
+          - mobilePhone
+        properties:
+          firstName:
+            $ref: '#/components/schemas/UserName'
+          lastName:
+            $ref: '#/components/schemas/UserName'
+          email:
+            $ref: '#/components/schemas/Email'
+          mobilePhone:
+            $ref: '#/components/schemas/Phone'
+
+      Address:
+        type: object
+        required:
+          - streetAddress
+          - city
+          - state
+          - zip
+        properties:
+          streetAddress:
+            type: string
+          streetAddress2:
+            type: string
+          city:
+            type: string
+          state:
+            $ref: '#/components/schemas/USState'
+          zip:
+            type: string
+        additionalProperties: false
+
+      CreditTerms:
+        type: object
+        required:
+          - creditLimit
+          - userFeeEnabled
+          - cardFeeEnabled
+          - fuelRebateCents
+          - billingCycleType
+          - billingCycleStartDay
+          - gracePeriod
+          - nonFuelRebateBasisPoints
+        properties:
+          creditLimit:
+            type: integer
+          userFeeEnabled:
+            type: boolean
+          userFee:
+            type: integer
+          cardFeeEnabled:
+            type: boolean
+          cardFee:
+            type: integer
+          fuelRebateCents:
+            type: string
+          billingCycleType:
+            enum:
+              - weekly
+              - biweekly
+              - monthly
+          billingCycleStartDay:
+            type: integer
+            minimum: 1
+          gracePeriod:
+            type: integer
+          nonFuelRebateBasisPoints:
+            type: integer
+        additionalProperties: false
+
+      Email:
+        type: string
+        minLength: 3
+        maxLength: 320
+        pattern: "[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?.)+[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?"
+
+      FleetBusinessType:
+        enum:
+          - llp
+          - llc
+          - corporation
+          - non_profit
+          - sole_proprietorship
+          - other_partnership
+
+      FleetCardRestriction:
+        enum:
+          - fuel_only
+          - fuel_and_maintenance
+          - unrestricted
+
+      FleetRestrictions:
+        type: object
+        required:
+          - fleetCardRestriction
+        properties:
+          fleetCardRestriction:
+            $ref: '#/components/schemas/FleetCardRestriction'
+        additionalProperties: false
+
+      FleetSettings:
+        type: object
+        required:
+          - enablePin
+          - enablePinCards
+        properties:
+          enablePin:
+            type: boolean
+          enablePinCards:
+            type: boolean
+        additionalProperties: false
+
+      FleetName:
+        type: string
+        minLength: 1
+        maxLength: 128
+
+      FuelType:
+        enum:
+          - diesel
+          - unleaded_regular
+          - unleaded_plus
+          - unleaded_super
+
+      Phone:
+        type: string
+
+      PlatformRef:
+        type: object
+        required:
+          - id
+          - name
+        properties:
+          id:
+            type: string
+          name:
+            $ref: '#/components/schemas/PlatformName'
+        additionalProperties: false
+
+      PlatformFleetRef:
+        type: object
+        required:
+          - fleetId
+          - platform
+        properties:
+          fleetId:
+            type: string
+          platform:
+            $ref: '#/components/schemas/PlatformRef'
+        additionalProperties: false
+
+      USState:
+        enum:
+          - AL
+          - AK
+          - AZ
+          - AR
+          - CA
+          - CO
+          - CT
+          - DE
+          - DC
+          - FL
+          - GA
+          - HI
+          - ID
+          - IL
+          - IN
+          - IA
+          - KS
+          - KY
+          - LA
+          - ME
+          - MD
+          - MA
+          - MI
+          - MN
+          - MS
+          - MO
+          - MT
+          - NE
+          - NV
+          - NH
+          - NJ
+          - NM
+          - NY
+          - NC
+          - ND
+          - OH
+          - OK
+          - OR
+          - PA
+          - RI
+          - SC
+          - SD
+          - TN
+          - TX
+          - UT
+          - VT
+          - VA
+          - WA
+          - WV
+          - WI
+          - WY
+
+      UserName:
+        type: string
+        minLength: 1
+        maxLength: 40
+        pattern: '^[^<>!;]*$'
+
+      UserRole:
+        enum:
+          - account_owner
+          - admin
+          - manager
+          - employee
+
+      VehicleName:
+        description: Nickname of the vehicle as provided by fleet manager
+        type: string
+        minLength: 1
+        maxLength: 40
+
+      VehicleMake:
+        description: Vehicle make
+        type: string
+        minLength: 1
+        maxLength: 40
+
+      VehicleModel:
+        description: Model of the vehicle
+        type: string
+        minLength: 1
+        maxLength: 40
+
+      VehicleLicensePlate:
+        description: License plate of the vehicle
+        type: string
+        minLength: 2
+        maxLength: 9
+        pattern: '^(?:[0-9A-Z]+([ -][0-9A-Z]+)?)$'
+
+      VehicleModelYear:
+        description: Vehicle year
+        type: integer
+        minimum: 1950
+        maximum: 2050
+
+      VehicleVin:
+        description: Vehicle Identification Number
+        type: string
+        pattern: '^[A-Z0-9]{17}$'
+
+      VehicleTankCapacity:
+        description: Vehicle Tank Capacity
+        type: number
+        minimum: 1
+
+      # REQUEST AND RESPONSE TYPES
+      FleetPlatformByIdsLookupRequest:
+        description: List of IDs of the fleets as assigned by Coast
+        type: array
+        items:
+          type: string
+
+      FleetPlatformByIdsLookupResponse:
+        type: array
+        items:
+          $ref: '#/components/schemas/PlatformFleetRef'
+
+      GeneralErrorResponse:
+        type: object
+        required:
+          - message
+        properties:
+          message:
+            type: string
+        additionalProperties: false
+
+      PlatformCreateRequest:
+        type: object
+        required:
+          - name
+        properties:
+          name:
+            $ref: '#/components/schemas/PlatformName'
+        additionalProperties: false
+
+      PlatformResponse:
+        description: Platform object
+        type: object
+        required:
+          - id
+          - name
+        properties:
+          id:
+            description: Unique ID of the platform as assigned by Coast
+            type: string
+          name:
+            $ref: '#/components/schemas/PlatformName'
+        additionalProperties: false
+
+      FleetsResponse:
+        description: List of fleets
+        type: object
+        required:
+          - items
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/FleetResponse'
+        additionalProperties: false
+
+      FleetCreateRequest:
+        description: Request to create a new fleet in the program
+        type: object
+        required:
+          - name
+          - legalName
+          - ein
+          - companyEmail
+          - businessType
+          - address
+          - accountOwner
+          - creditTerms
+          - restrictions
+        properties:
+          name:
+            $ref: '#/components/schemas/FleetName'
+          legalName:
+            $ref: '#/components/schemas/FleetName'
+          ein:
+            type: string
+          companyEmail:
+            $ref: '#/components/schemas/Email'
+          businessType:
+            $ref: '#/components/schemas/FleetBusinessType'
+          address:
+            $ref: '#/components/schemas/Address'
+          accountOwner:
+            $ref: '#/components/schemas/AccountOwnerCreateRequest'
+          creditTerms:
+            $ref: '#/components/schemas/CreditTerms'
+          restrictions:
+            $ref: '#/components/schemas/FleetRestrictions'
+          settings:
+            $ref: '#/components/schemas/FleetSettings'
+        additionalProperties: false
+
+      FleetResponse:
+        description: Fleet object
+        type: object
+        required:
+          - id
+          - name
+          - legalName
+          - companyEmail
+          - address
+        properties:
+          id:
+            description: Unique ID of the fleet as assigned by Coast
+            type: string
+          name:
+            $ref: '#/components/schemas/FleetName'
+          legalName:
+            $ref: '#/components/schemas/FleetName'
+          companyEmail:
+            $ref: '#/components/schemas/Email'
+          address:
+            $ref: '#/components/schemas/Address'
+
+      UserCreateRequest:
+        description: Request to create a new user
+        type: object
+        required:
+          - firstName
+          - lastName
+          - role
+        properties:
+          firstName:
+            $ref: '#/components/schemas/UserName'
+          lastName:
+            $ref: '#/components/schemas/UserName'
+          role:
+            $ref: '#/components/schemas/UserRole'
+          email:
+            $ref: '#/components/schemas/Email'
+          mobilePhone:
+            $ref: '#/components/schemas/Phone'
+          active:
+            type: boolean
+        additionalProperties: false
+
+      UsersResponse:
+        description: List of users
+        type: object
+        required:
+          - items
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/UserResponse'
+        additionalProperties: false
+
+      UserResponse:
+        description: User object
+        type: object
+        required:
+          - id
+          - firstName
+          - lastName
+          - role
+          - active
+        properties:
+          id:
+            type: string
+          firstName:
+            $ref: '#/components/schemas/UserName'
+          lastName:
+            $ref: '#/components/schemas/UserName'
+          role:
+            $ref: '#/components/schemas/UserRole'
+          email:
+            $ref: '#/components/schemas/Email'
+          mobilePhone:
+            $ref: '#/components/schemas/Phone'
+          active:
+            type: boolean
+
+      UserUpdateRequest:
+        description: Request to update provided attributes for given user in a fleet
+        type: object
+        properties:
+          firstName:
+            $ref: '#/components/schemas/UserName'
+          lastName:
+            $ref: '#/components/schemas/UserName'
+          role:
+            $ref: '#/components/schemas/UserRole'
+          email:
+            oneOf:
+              - enum: [null]
+              - $ref: '#/components/schemas/Email'
+          mobilePhone:
+            oneOf:
+              - enum: [null]
+              - $ref: '#/components/schemas/Phone'
+          active:
+            type: boolean
+        additionalProperties: false
+
+      VehicleCreateRequest:
+        description: Request to create a new vehicle in a fleet
+        type: object
+        required:
+          - name
+          - licensePlate
+        properties:
+          name:
+            $ref: '#/components/schemas/VehicleName'
+          licensePlate:
+            $ref: '#/components/schemas/VehicleLicensePlate'
+          licensePlateState:
+            $ref: '#/components/schemas/USState'
+          make:
+            $ref: '#/components/schemas/VehicleMake'
+          model:
+            $ref: '#/components/schemas/VehicleModel'
+          modelYear:
+            $ref: '#/components/schemas/VehicleModelYear'
+          vin:
+            $ref: '#/components/schemas/VehicleVin'
+          fuelType:
+            $ref: '#/components/schemas/FuelType'
+          tankCapacity:
+            $ref: '#/components/schemas/VehicleTankCapacity'
+        additionalProperties: false
+
+      VehicleUpdateRequest:
+        description: Request to update provided attributes for given vehicle in a fleet
+        type: object
+        properties:
+          name:
+            $ref: '#/components/schemas/VehicleName'
+          active:
+            type: boolean
+          licensePlate:
+            $ref: '#/components/schemas/VehicleLicensePlate'
+          licensePlateState:
+            oneOf:
+              - enum: [null]
+              - $ref: '#/components/schemas/USState'
+          make:
+            oneOf:
+              - enum: [null]
+              - $ref: '#/components/schemas/VehicleMake'
+          model:
+            oneOf:
+              - enum: [null]
+              - $ref: '#/components/schemas/VehicleModel'
+          modelYear:
+            oneOf:
+              - enum: [null]
+              - $ref: '#/components/schemas/VehicleModelYear'
+          vin:
+            oneOf:
+              - enum: [null]
+              - $ref: '#/components/schemas/VehicleVin'
+          fuelType:
+            oneOf:
+              - enum: [null]
+              - $ref: '#/components/schemas/FuelType'
+          tankCapacity:
+            oneOf:
+              - enum: [null]
+              - $ref: '#/components/schemas/VehicleTankCapacity'
+        additionalProperties: false
+
+      VehiclesResponse:
+        description: List of vehicles
+        type: object
+        required:
+          - items
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/VehicleResponse'
+        additionalProperties: false
+
+      VehicleResponse:
+        description: Vehicle object
+        type: object
+        required:
+          - id
+          - active
+          - name
+          - licensePlate
+        properties:
+          id:
+            description: Unique ID of the vehicle as assigned by Coast
+            type: string
+          active:
+            description: true if vehicle is active, false if deactivated
+            type: boolean
+          name:
+            $ref: '#/components/schemas/VehicleName'
+          licensePlate:
+            $ref: '#/components/schemas/VehicleLicensePlate'
+          licensePlateState:
+            $ref: '#/components/schemas/USState'
+          make:
+            $ref: '#/components/schemas/VehicleMake'
+          model:
+            $ref: '#/components/schemas/VehicleModel'
+          modelYear:
+            $ref: '#/components/schemas/VehicleModelYear'
+          vin:
+            $ref: '#/components/schemas/VehicleVin'
+          fuelType:
+            $ref: '#/components/schemas/FuelType'
+          tankCapacity:
+            $ref: '#/components/schemas/VehicleTankCapacity'
+contentType: yaml
