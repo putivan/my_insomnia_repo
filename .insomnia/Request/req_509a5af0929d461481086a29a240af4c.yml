@@ -1,0 +1,26 @@
+_id: req_509a5af0929d461481086a29a240af4c
+type: Request
+parentId: wrk_52d613c105e14ba5b64402d380f9268c
+modified: 1737068378423
+created: 1737068336497
+url: httpbin.konghq.com/anything
+name: New Request
+description: ""
+method: GET
+body: {}
+parameters: []
+headers:
+  - name: User-Agent
+    value: insomnia/10.3.0
+authentication: {}
+preRequestScript: null
+metaSortKey: -1737068336497
+isPrivate: false
+pathParameters: []
+afterResponseScript: null
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global
